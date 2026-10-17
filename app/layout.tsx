@@ -4,6 +4,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "What's for dinner?",
   description: "A family dinner calendar, favorites, and room for everyone’s preferences.",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
