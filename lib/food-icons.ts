@@ -1,0 +1,53 @@
+// Match the dish before its ingredients: chicken tacos get a taco, not a drumstick.
+// No external requests or model calls are needed when adding a staple.
+const dishes: [RegExp, string][] = [
+  [/\b(tacos?|taquitos?)\b/, '🌮'],
+  [/\b(burritos?|enchiladas?|wraps?|kathi rolls?|shawarma|gyros?|quesadillas?)\b/, '🌯'],
+  [/\b(pizzas?|flatbreads?|calzones?)\b/, '🍕'],
+  [/\b(burgers?|cheeseburgers?|hamburgers?|sliders?)\b/, '🍔'],
+  [/\b(hot dogs?|hotdogs?|frankfurters?)\b/, '🌭'],
+  [/\b(sandwich(?:es)?|subs?|panini|paninis|grilled cheese|blt|hoagies?)\b/, '🥪'],
+  [/\b(salads?|caesar|poke)\b/, '🥗'],
+  [/\b(sushi|sashimi|maki|nigiri|california rolls?)\b/, '🍣'],
+  [/\b(dumplings?|gyoza|potstickers?|pierogi|wontons?|momos?|bao)\b/, '🥟'],
+  [/\b(ramen|pho|udon|soba|lo mein|chow mein|pad thai|noodles?)\b/, '🍜'],
+  [/\b(pasta|spaghetti|lasagna|lasagne|ravioli|penne|linguine|fettuccine|rigatoni|gnocchi|tortellini|mac(?:aroni)? (?:and )?cheese|alfredo)\b/, '🍝'],
+  [/\b(curr(?:y|ies)|tikka masala|butter chicken|korma|dal|dahl|chana masala)\b/, '🍛'],
+  [/\b(soups?|stews?|chili|chowder|gumbo|matzo ball|casseroles?|hot pot)\b/, '🍲'],
+  [/\b(rice|risotto|biryani|paella|bibimbap|jambalaya)\b/, '🍚'],
+  [/\b(falafel|hummus)\b/, '🧆'],
+  [/\b(pancakes?|crepes?)\b/, '🥞'],
+  [/\b(waffles?)\b/, '🧇'],
+  [/\b(eggs?|omelets?|omelettes?|frittata|shakshuka)\b/, '🍳'],
+  [/\b(bagels?)\b/, '🥯'],
+  [/\b(fries|french fries|chips)\b/, '🍟'],
+  [/\b(steaks?|beef|brisket|pot roast|meatloaf|lamb|pork|ribs?|chops?)\b/, '🥩'],
+  [/\b(chicken|turkey|wings?|drumsticks?|nuggets?)\b/, '🍗'],
+  [/\b(shrimp|prawns?|scampi)\b/, '🍤'],
+  [/\b(lobsters?)\b/, '🦞'],
+  [/\b(crabs?)\b/, '🦀'],
+  [/\b(salmon|fish|tuna|cod|tilapia|halibut|trout|seafood)\b/, '🐟'],
+  [/\b(potatoes|potato)\b/, '🥔'],
+  [/\b(asparagus)\b/, '🌱'],
+  [/\b(broccoli|vegetables?|veggies)\b/, '🥦'],
+  [/\b(corn)\b/, '🌽'],
+  [/\b(beans?|lentils?)\b/, '🫘'],
+  [/\b(bread|toast|garlic bread)\b/, '🍞'],
+  [/\b(cheese)\b/, '🧀'],
+  [/\b(ice cream|gelato)\b/, '🍨'],
+  [/\b(cookies?)\b/, '🍪'],
+  [/\b(cakes?|cupcakes?)\b/, '🧁'],
+  [/\b(pies?)\b/, '🥧'],
+  [/\b(indian|bangladeshi|pakistani)\b/, '🍛'],
+  [/\b(mexican|tex mex)\b/, '🌮'],
+  [/\b(italian)\b/, '🍝'],
+  [/\b(japanese)\b/, '🍣'],
+  [/\b(chinese)\b/, '🥡'],
+  [/\b(thai|vietnamese)\b/, '🍜'],
+  [/\b(mediterranean|greek|middle eastern)\b/, '🥙'],
+];
+export function foodIcon(name: string): string {
+  const normalized = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/&/g, ' and ').replace(/[-–—]/g, ' ').replace(/\s+/g, ' ');
+  return dishes.find(([pattern]) => pattern.test(normalized))?.[1] || '🍽️';
+}

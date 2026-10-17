@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "The Dinner Table",
+  title: "What's for dinner?",
   description: "A family dinner calendar, favorites, and room for everyone’s preferences.",
   icons: {
     icon: "/favicon.svg",
