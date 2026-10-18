@@ -1,5 +1,15 @@
 export const profiles = ['Jeff', 'Devalina', 'Mirabella', 'Zeke'];
 export const isParent = (person: string) => person === 'Jeff' || person === 'Devalina';
+export function childWeekRange(today: string) {
+  const monday = new Date(`${today}T12:00:00Z`);
+  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+  const dateAt = (weeks: number, days: number) => {
+    const date = new Date(monday);
+    date.setUTCDate(date.getUTCDate() + weeks * 7 + days);
+    return date.toISOString().slice(0, 10);
+  };
+  return { first: dateAt(-1, 0), last: dateAt(1, 6) };
+}
 export type Selection = { id: string; type: string; date?: string; meal?: string; person?: string; status?: string; sequence?: number; [key: string]: any };
 export function daySelections(rows: Selection[], date: string) {
   const choices = rows.filter(r => r.type === 'selection' && r.date === date)
@@ -16,6 +26,40 @@ export function daySelections(rows: Selection[], date: string) {
   const split = active.length > 0 && (active.length < profiles.length || new Set(active.map(choice => choice.meal)).size > 1);
   return { decision, assignments, split, suggestions: choices.filter(r => r.status === 'suggestion'), previous: decisions.slice(1).filter(r => r.status === 'decision') };
 }
+export function mealCostCents(meal: Selection | undefined): number | null {
+  return typeof meal?.cost === 'number' && Number.isFinite(meal.cost) && meal.cost >= 0
+    ? Math.round(meal.cost * 100)
+    : null;
+}
+export function costMealsForDate(rows: Selection[], meals: Selection[], date: string, today: string): Selection[] {
+  const history = rows.find(row => row.id === 'history-' + date);
+  const { decision, assignments, split } = daySelections(rows, date);
+  const past = date < today;
+  const showPastDecision = past && !!decision && (!history || typeof decision.recordedAt === 'string' && decision.recordedAt > (history.updatedAt || ''));
+  const byName = (name: string) => meals.find(meal => meal.name === name) || { id: 'recorded-' + date + '-' + name, type: 'meal', name };
+  if (past && !showPastDecision) return history?.name ? [byName(history.name)] : [];
+  if (!decision) return [];
+  const ids = new Set((split ? Object.values(assignments) : [decision]).map(choice => choice?.meal).filter((id): id is string => typeof id === 'string'));
+  const selected = [...ids].map(id => meals.find(meal => meal.id === id) || { id, type: 'meal', name: id });
+  if (past && split && history?.name) {
+    const fallbackPeople = Array.isArray(history.assignedTo) ? history.assignedTo : profiles;
+    if (fallbackPeople.some((person: string) => !assignments[person])) {
+      const fallback = byName(history.name);
+      if (!selected.some(meal => meal.id === fallback.id)) selected.push(fallback);
+    }
+  }
+  return selected;
+}
+export function mealCostSummary(rows: Selection[], meals: Selection[], dates: string[], today: string) {
+  let cents = 0;
+  let unpriced = 0;
+  for (const date of dates) for (const meal of costMealsForDate(rows, meals, date, today)) {
+    const cost = mealCostCents(meal);
+    if (cost === null) unpriced++;
+    else cents += cost;
+  }
+  return { cents, unpriced };
+}
 export function validSelection(value: Selection, actor: string) {
   const assignedTo = value.assignedTo;
   return profiles.includes(actor) && value.person === actor &&
@@ -25,6 +69,7 @@ export function validSelection(value: Selection, actor: string) {
     (value.status === 'suggestion' || (value.status === 'decision' && isParent(actor)));
 }
 export function canRemove(value: Selection, actor: string) {
+  if (value.type === 'grocery') return isParent(actor) || value.person === actor;
   if (value.type === 'plan') return isParent(actor);
   if (value.type === 'selection') return isParent(actor) || (value.status === 'suggestion' && value.person === actor);
   if (value.type === 'note' || value.type === 'vote') return value.person === actor || (value.person === 'Wife' && actor === 'Devalina');

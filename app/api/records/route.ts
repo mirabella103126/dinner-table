@@ -1,7 +1,7 @@
 import { getDb } from '../../../db';
 import { records } from '../../../db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { profiles, validSelection, canRemove, isParent } from '../../../lib/planning';
+import { profiles, validSelection, canRemove, isParent, childWeekRange } from '../../../lib/planning';
 import { isEmoji } from '../../../lib/reactions';
 
 function todayInNewYork(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   let v: any;
   try { v = await req.json(); } catch { return Response.json({error:'Invalid entry'}, {status:400}); }
   const actor = req.headers.get('x-dinner-profile') || '';
-  if (!v || typeof v.id !== 'string' || !v.id || !['meal','selection','vote','note','history','fridge'].includes(v.type) || JSON.stringify(v).length > 15000 || !profiles.includes(actor)) {
+  if (!v || typeof v.id !== 'string' || !v.id || !['meal','selection','vote','note','history','fridge','grocery'].includes(v.type) || JSON.stringify(v).length > 15000 || !profiles.includes(actor)) {
     return Response.json({error:'Invalid entry or profile'}, {status:400});
   }
   const db = getDb();
@@ -23,10 +23,23 @@ export async function POST(req: Request) {
   if (existing && (existing.type !== v.type || (v.type !== 'meal' && v.type !== 'history' && !canRemove(existing, actor)))) {
     return Response.json({error:'This selection cannot be changed'}, {status:403});
   }
+  if (v.type === 'meal' && v.cost !== undefined && (typeof v.cost !== 'number' || !Number.isFinite(v.cost) || v.cost < 0 || v.cost > 99999.99 || Math.abs(v.cost * 100 - Math.round(v.cost * 100)) > 0.000001)) {
+    return Response.json({error:'Cost must be a non-negative dollar amount with at most two decimal places'}, {status:400});
+  }
+  if (v.type === 'meal' && v.emojiOverride !== undefined && (typeof v.emojiOverride !== 'string' || !isEmoji(v.emojiOverride))) {
+    return Response.json({error:'Choose one emoji for the meal icon'}, {status:400});
+  }
   if (v.type === 'fridge') {
     if (existing || typeof v.name !== 'string' || !v.name.trim() || v.name.trim().length > 120 || v.person !== actor) return Response.json({error:'Invalid fridge item'}, {status:400});
     const saved={id:v.id,type:'fridge',name:v.name.trim(),person:actor};
     await db.insert(records).values({id:v.id,value:JSON.stringify(saved)});
+    return Response.json(saved);
+  }
+  if (v.type === 'grocery') {
+    if (!v.id.startsWith('grocery-') || typeof v.name !== 'string' || !v.name.trim() || v.name.trim().length > 120 || v.person !== actor) return Response.json({error:'Invalid grocery item'}, {status:400});
+    if (existing && existing.person !== actor) return Response.json({error:'Only the requester can edit this grocery item'}, {status:403});
+    const saved={id:v.id,type:'grocery',name:v.name.trim(),person:actor,createdAt:existing?.createdAt||new Date().toISOString()};
+    await db.insert(records).values({id:v.id,value:JSON.stringify(saved)}).onConflictDoUpdate({target:records.id,set:{value:JSON.stringify(saved)}});
     return Response.json(saved);
   }
   if (v.type === 'history') {
@@ -40,6 +53,7 @@ export async function POST(req: Request) {
     return Response.json(saved);
   }
   if (v.type === 'selection') {
+    if (!isParent(actor) && typeof v.date === 'string' && v.date > childWeekRange(todayInNewYork()).last) return Response.json({error:'Kids can only suggest meals through next week.'}, {status:403});
     if (!validSelection(v, actor) || existing || (v.date < todayInNewYork() && (v.status !== 'decision' || !isParent(actor)))) return Response.json({error:'Invalid selection'}, {status:403});
     if (v.date < todayInNewYork()) v = {...v, recordedAt: new Date().toISOString()};
     // Append-only decisions. SQLite assigns an ordered sequence in the same
@@ -85,7 +99,8 @@ export async function POST(req: Request) {
     return Response.json(JSON.parse(stored.value));
   }
   if (v.type==='note' && typeof v.target==='string' && /^\d{4}-\d{2}-\d{2}$/.test(v.target) && v.target<todayInNewYork()) return Response.json({error:'Past days are read-only'}, {status:403});
-  if (v.type==='vote'){const target=await db.select().from(records).where(eq(records.id,v.target)).get();const targetDate=target?(JSON.parse(target.value).date||v.target.replace(/^plan-/,'')):'';if(/^\d{4}-\d{2}-\d{2}$/.test(targetDate)&&targetDate<todayInNewYork())return Response.json({error:'Past days are read-only'}, {status:403});}
+  if (v.type==='note' && v.side===true && !isParent(actor)) return Response.json({error:'Only a parent can add a side'}, {status:403});
+  if (v.type==='vote'){const target=typeof v.target==='string'?await db.select().from(records).where(eq(records.id,v.target)).get():null;if(typeof v.target==='string'&&v.target.startsWith('grocery-')&&(!target||JSON.parse(target.value).type!=='grocery'))return Response.json({error:'This grocery item is no longer on the list'}, {status:404});const targetDate=target?(JSON.parse(target.value).date||v.target.replace(/^plan-/,'')):'';if(/^\d{4}-\d{2}-\d{2}$/.test(targetDate)&&targetDate<todayInNewYork())return Response.json({error:'Past days are read-only'}, {status:403});}
   if ((v.type === 'vote' || v.type === 'note') && v.person !== actor) return Response.json({error:'Use your own profile'}, {status:403});
   if (v.type === 'vote' && (typeof v.target !== 'string' || !(typeof v.reaction === 'string' && isEmoji(v.reaction) || [1,-1].includes(v.value)) || v.id !== 'vote-'+v.target+'-'+actor)) return Response.json({error:'Invalid vote'}, {status:400});
   await db.insert(records).values({id:v.id,value:JSON.stringify(v)}).onConflictDoUpdate({target:records.id,set:{value:JSON.stringify(v)}});
@@ -101,6 +116,14 @@ export async function DELETE(req: Request) {
   const entry = row ? JSON.parse(row.value) : null;
   if (entry?.type === 'fridge') {
     await db.delete(records).where(eq(records.id,input.id));
+    return Response.json({ok:true});
+  }
+  if (entry?.type === 'grocery') {
+    if (!canRemove(entry,actor)) return Response.json({error:'You cannot remove this grocery item'}, {status:403});
+    await db.batch([
+      db.delete(records).where(sql`json_extract(value, '$.type') = 'vote' AND json_extract(value, '$.target') = ${input.id}`),
+      db.delete(records).where(eq(records.id,input.id)),
+    ]);
     return Response.json({ok:true});
   }
   if ((entry?.type === 'meal' || (!entry && ['salmon','tacos'].includes(input.id)))) {
