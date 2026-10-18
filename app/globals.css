@@ -78,16 +78,6 @@ button,a,input,select,textarea{touch-action:manipulation}
 .icon-preview{font-size:28px;margin-bottom:8px}
 .drag-meal{font-size:18px;padding:8px 12px}
 @media(max-width:700px){.meal-tiles{display:flex;flex-wrap:wrap}.meal-tile{flex-direction:row;padding:8px 12px;gap:8px}.meal-tray{padding:14px}}
-/* Keep profile switching next to its top-right trigger. */
-.overlay:has(.profile-modal){align-items:flex-start;justify-content:flex-end;padding-top:94px;padding-right:max(24px,calc((100vw - 1480px)/2 + 48px));backdrop-filter:none;background:#20362b26}
-.profile-modal{width:360px;padding:24px;box-shadow:0 12px 36px #20362b26;max-height:calc(100dvh - 110px)}
-.profile-modal h2{font-size:30px;margin:8px 0 12px}
-.profile-modal .eyebrow{display:none}
-.profile-modal .profile-grid{gap:10px;margin-top:16px}
-.profile-modal .profile-grid button{padding:12px 8px;gap:8px}
-.profile-modal .profile-grid svg{width:64px;height:64px}
-@media(max-width:1180px){.overlay:has(.profile-modal){padding-right:28px}}
-@media(max-width:700px){.overlay:has(.profile-modal){padding:92px 12px 12px;justify-content:flex-end}.profile-modal{width:min(360px,100%);max-height:calc(100dvh - 110px);padding:20px}}
 .decision-edit{border:0;background:transparent;padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px;width:100%}
 .week-range{font-family:'Libre Caslon Display',Georgia,serif;font-size:27px!important;color:#283e33!important;margin:0!important}.today-date{font-size:16px!important;margin-top:6px!important}.past-day{background:#f2f1ec;opacity:.72}.one-time-button{width:100%;margin-top:auto;background:#fffefa;border:1px solid #cbd1c5;border-radius:7px;padding:10px;text-align:left}.add-meal-tile{background:#edf1e5;touch-action:manipulation}.side-form-actions{display:flex;justify-content:space-between;gap:12px;grid-column:1/-1}.day form .side-form-actions button:last-child{grid-column:auto;text-align:right}.day form .side-form-actions button:first-child{text-align:left}.inline-votes{gap:2px;display:inline-flex;margin-left:3px}.inline-votes button{border:0;background:transparent;padding:2px;min-width:0;min-height:32px;font-size:16px}.inline-votes button[aria-pressed=true]{border:0;background:#d3e1bd;border-radius:5px}.dinner-choice .mealname{width:auto;padding:4px 0}.meal-tray .meal-tiles{align-items:center}@media(max-width:700px){.week-range{font-size:24px!important}}
 .week.has-picked-meal .day[data-accept-meal="true"]{cursor:pointer}.week.has-picked-meal .day[data-accept-meal="true"]:hover,.week.has-picked-meal .day[data-accept-meal="true"]:focus-visible{background:#edf1e5}.meal-tile.picked{background:#dce8cc}
@@ -163,6 +153,17 @@ header{justify-content:flex-end}
 .fridge-row form{margin-left:auto}
 .meal-tray .restaurant-heading{margin-top:18px}.meal-tray .restaurant-heading+.meal-tiles{margin-top:10px}
 .idle-profile-screen{min-height:100dvh;max-width:none;display:grid;place-items:center;padding:24px;background:#eef1e8}.idle-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;width:min(600px,100%)}.idle-profile-grid button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;min-height:180px;padding:20px;border:1px solid #cbd6c5;border-radius:18px;background:#fffefa;font-size:20px;cursor:pointer}.idle-profile-grid button:hover{background:#e7eddc;border-color:#698451}.idle-profile-grid svg{border-radius:50%}@media(max-width:500px){.idle-profile-grid{gap:10px}.idle-profile-grid button{min-height:150px;padding:12px;font-size:17px}.idle-profile-grid svg{width:82px;height:82px}}
+.profile-splash{padding:32px;background:#eef1e8;backdrop-filter:none}
+.profile-splash .profile-modal{width:100%;max-width:980px;max-height:100dvh;overflow:auto;padding:32px;background:transparent;border-radius:0;text-align:center}
+.profile-splash .profile-modal h2,.profile-splash-heading h1{font-family:'Libre Caslon Display',Georgia,serif;font-size:clamp(48px,7vw,84px);line-height:1.05;font-weight:400;margin:12px 0 42px;padding:0}
+.profile-splash .profile-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin:0}
+.profile-splash .profile-grid button,.idle-profile-grid button{background:#fffefa;border:1px solid #cbd6c5;border-radius:18px;min-height:210px;justify-content:center;padding:20px;gap:14px;font-size:20px}
+.profile-splash .profile-grid button:hover,.idle-profile-grid button:hover{background:#e7eddc;border-color:#698451}
+.profile-splash .profile-grid svg{width:112px;height:112px;border-radius:50%}
+.profile-splash .close{top:0;right:0}
+.idle-profile-screen{display:flex;flex-direction:column;justify-content:center;gap:0;text-align:center}
+.idle-profile-grid{grid-template-columns:repeat(4,minmax(0,1fr));width:min(916px,100%)}
+@media(max-width:700px){.profile-splash{padding:20px 12px}.profile-splash .profile-modal{padding:20px 4px}.profile-splash .profile-modal h2,.profile-splash-heading h1{font-size:clamp(44px,10vw,66px);margin-bottom:30px}.profile-splash .profile-grid,.idle-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.profile-splash .profile-grid button,.idle-profile-grid button{min-height:165px;padding:12px;font-size:17px}.profile-splash .profile-grid svg,.idle-profile-grid svg{width:82px;height:82px}.idle-profile-screen{padding:24px 12px}}
 header{height:72px}.sectionhead{padding:4px 0 14px;gap:16px}.sectionhead .week-range{margin:0!important}.meal-tray{margin-top:16px;margin-bottom:12px}@media(max-width:700px){header{height:auto;min-height:64px;padding:8px 0}.sectionhead{padding:4px 0 14px}}
 .week{grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}.day{min-width:0}@media(max-width:1180px){.week .day{padding:10px}}@media(max-width:900px){.week{grid-template-columns:1fr;gap:14px}.week .day{padding:16px;min-height:0}}
 main{position:relative;z-index:1}.profile-pattern{position:fixed;inset:0;z-index:0;pointer-events:none;background-repeat:repeat;background-size:320px 320px;opacity:.16;filter:grayscale(.75)}

@@ -1,0 +1,46 @@
+name: Daily dinner database snapshot
+
+on:
+  schedule:
+    # 09:17 UTC is 4:17 AM EST or 5:17 AM EDT.
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download and verify all dinner records
+        env:
+          SITE_URL: https://wiesner-dinner-table.jeffweez.chatgpt.site/api/records
+        run: |
+          set -euo pipefail
+          mkdir -p snapshot
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors \
+            --connect-timeout 15 --max-time 60 "$SITE_URL" -o snapshot/records.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          records = json.loads(Path('snapshot/records.json').read_text())
+          if not isinstance(records, list) or not all(
+              isinstance(row, dict) and isinstance(row.get('id'), str) and row['id']
+              for row in records
+          ):
+              raise SystemExit('The site did not return a valid records snapshot')
+          print(f'Validated {len(records)} dinner records')
+          PY
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > snapshot/captured-at-utc.txt
+          sha256sum snapshot/records.json > snapshot/records.sha256
+
+      - name: Save private snapshot for 90 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: dinner-database-${{ github.run_id }}
+          path: snapshot/
+          retention-days: 90
+          if-no-files-found: error
