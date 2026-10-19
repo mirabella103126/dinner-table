@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore Node executes TypeScript directly for this local test.
-import {daySelections, validSelection, canRemove, childWeekRange, mealCostSummary} from '../lib/planning.ts';
+import {daySelections, validSelection, canRemove, childWeekRange, mealCostSummary, dayMealCostCents} from '../lib/planning.ts';
 
 test('kids stay within the previous, current, and next calendar weeks',()=>{
   assert.deepEqual(childWeekRange('2026-10-18'),{first:'2026-10-05',last:'2026-10-25'});
@@ -33,4 +33,12 @@ test('cost totals count each distinct decided meal once per day and flag unknown
   assert.deepEqual(mealCostSummary([everyone,split,suggestion],meals,[date],date),{cents:2050,unpriced:0});
   const history={id:'history-2026-10-15',type:'history',name:'Tacos',date:'2026-10-15'};
   assert.deepEqual(mealCostSummary([history],meals,['2026-10-15'],'2026-10-16'),{cents:0,unpriced:1});
+});
+test('a day price overrides only that date and leaves the meal default intact',()=>{
+  const meal={id:'salmon',type:'meal',name:'Salmon',cost:12.5};
+  const override={id:`day-price-${date}-salmon`,type:'day-price',date,meal:'salmon',cost:18};
+  assert.equal(dayMealCostCents([override],meal,date),1800);
+  assert.equal(dayMealCostCents([override],meal,'2026-10-17'),1250);
+  assert.equal(meal.cost,12.5);
+  assert.deepEqual(mealCostSummary([choice('d','Jeff','decision',1),override],[meal],[date],date),{cents:1800,unpriced:0});
 });

@@ -31,6 +31,10 @@ export function mealCostCents(meal: Selection | undefined): number | null {
     ? Math.round(meal.cost * 100)
     : null;
 }
+export function dayMealCostCents(rows: Selection[], meal: Selection | undefined, date: string): number | null {
+  const override = meal && rows.find(row => row.id === `day-price-${date}-${meal.id}` && row.type === 'day-price');
+  return mealCostCents(override || meal);
+}
 export function costMealsForDate(rows: Selection[], meals: Selection[], date: string, today: string): Selection[] {
   const history = rows.find(row => row.id === 'history-' + date);
   const { decision, assignments, split } = daySelections(rows, date);
@@ -54,7 +58,7 @@ export function mealCostSummary(rows: Selection[], meals: Selection[], dates: st
   let cents = 0;
   let unpriced = 0;
   for (const date of dates) for (const meal of costMealsForDate(rows, meals, date, today)) {
-    const cost = mealCostCents(meal);
+    const cost = dayMealCostCents(rows, meal, date);
     if (cost === null) unpriced++;
     else cents += cost;
   }
